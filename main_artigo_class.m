@@ -4,7 +4,7 @@ eeglab; close;
 ft_defaults;
 
 base_dir = 'C:\Users\Bio Lab\Documents\ESI_Dados\';
-arquivos = dir(fullfile(base_dir, 'motorexecution_subject1_run*.gdf'));
+arquivos = dir(fullfile(base_dir, 'motorexecution_subject6_run*.gdf'));
 
 % Mapeamento de eventos
 event_map = {
@@ -195,8 +195,8 @@ for i = 1:length(classes_motoras)
         EEG_classe = pop_epoch(EEG_continuo, {classe}, [-1 3], 'newname', ['EEG_' classe], 'epochinfo', 'yes');
         EEG_classe = pop_rmbase(EEG_classe, [-1000 0]);
 
-        lat = latencia_motor(EEG_classe);
-        modelodipolo(EEG_classe, lat);
+        lat = latencia_motor(EEG_classe,250,450);
+        %modelodipolo(EEG_classe, lat);
         [~, dataAvg, source, vol] = eloreta_processamento(EEG_classe);
         eloreta_solucao(dataAvg, lat, vol, classe);
 

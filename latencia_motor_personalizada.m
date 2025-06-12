@@ -39,5 +39,3 @@ function latency_avg = latencia_motor_personalizada(EEG, t_min, t_max)
     latency_avg = mean(latencies);
     disp(['Latência média (derivada da energia): ' num2str(latency_avg*1000) ' ms']);
 end
-
-
