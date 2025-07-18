@@ -1,11 +1,10 @@
 function [EEG, dataAvg, source, vol] = eloreta_processamento(EEG)
-
-    % ⚠ Verifica se os dados estão epocados
+    % Verifica se os dados estão epocados
     if EEG.trials == 1
         error('Os dados devem estar segmentados em épocas!');
     end
 
-    % ⚠ Verifica se os canais possuem coordenadas
+    % Verifica se os canais possuem coordenadas
     has_coords = sum(~isnan([EEG.chanlocs.X]));
     if has_coords < EEG.nbchan
         warning('Alguns canais não possuem coordenadas! Corrija com pop_chanedit antes.');
@@ -26,41 +25,65 @@ function [EEG, dataAvg, source, vol] = eloreta_processamento(EEG)
     % Converte EEG para estrutura FieldTrip
     dataPre = eeglab2fieldtrip(EEG, 'preprocessing', 'dipfit');
 
-    % Re-referência no FieldTrip
+    % Pré-processamento no FieldTrip (re-referência e baseline)
     cfg = [];
     cfg.channel = 'all';
     cfg.reref = 'yes';
     cfg.refchannel = 'all';
     dataPre = ft_preprocessing(cfg, dataPre);
 
-    % ⚠ Alinha coordenadas com o modelo
+    cfg = [];
+    cfg.baseline = [EEG.xmin 0];
+    dataPre = ft_preprocessing(cfg, dataPre);
+
+    % Converte unidades para mm
     dataPre.elec = ft_convert_units(dataPre.elec, 'mm');
 
-    % Carrega modelo de volume (cabeça)
+    % Carrega modelo de volume e converte unidades
     vol = load(EEG.dipfit.hdmfile);
     vol.vol = ft_convert_units(vol.vol, 'mm');
 
-    % Prepara a grade de fontes (leadfield)
+    % Gera grade no espaço MNI com warping não linear
+    template_mri = ft_read_mri(fullfile(bemPath, 'standard_mri.mat'));
+
+    cfg = [];
+    cfg.warpmni   = 'yes';
+    cfg.nonlinear = 'yes';
+    cfg.template  = template_mri;
+    cfg.grid.resolution = 3;  % mm
+    cfg.grid.unit = 'mm';
+    cfg.elec      = dataPre.elec;      
+    cfg.headmodel = vol.vol;           
+    sourcemodel   = ft_prepare_sourcemodel(cfg);
+
+
+    % Gera leadfield usando grade refinada e volume head model
     cfg = [];
     cfg.elec      = dataPre.elec;
     cfg.headmodel = vol.vol;
-    cfg.resolution = 5;  % resolução em mm (mais fino = mais preciso, mais lento)
-    cfg.unit      = 'mm';
-    cfg.channel   = 'all';
+    cfg.grid      = sourcemodel;
+    cfg.normalize = 'no';
     sourcemodel   = ft_prepare_leadfield(cfg);
 
-    % Calcula a média e covariância dos dados (ERP)
+    % Calcula média e covariância dos dados (ERP)
     cfg = [];
     cfg.covariance       = 'yes';
-    cfg.covariancewindow = [EEG.xmin 0];  % usa baseline
-    cfg.keeptrials       = 'no';  % média por condição
+    cfg.covariancewindow = [EEG.xmin 0];  % baseline
+    cfg.keeptrials       = 'no';
+    cfg.removemean       = 'yes';
     dataAvg = ft_timelockanalysis(cfg, dataPre);
 
     % Reconstrução de fonte com eLORETA
     cfg = [];
     cfg.method      = 'eloreta';
+    cfg.tight = 'yes';
     cfg.sourcemodel = sourcemodel;
     cfg.headmodel   = vol.vol;
     source          = ft_sourceanalysis(cfg, dataAvg);
-end
 
+    % Z-score da potência (opcional)
+    if isfield(source, 'avg') && isfield(source.avg, 'pow')
+        pow = source.avg.pow;
+        source.avg.pow_z = (pow - mean(pow)) / std(pow);
+    end
+end
