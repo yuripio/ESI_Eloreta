@@ -25,7 +25,7 @@ function [EEG, dataAvg, source, vol] = eloreta_processamento(EEG)
     % Converte EEG para estrutura FieldTrip
     dataPre = eeglab2fieldtrip(EEG, 'preprocessing', 'dipfit');
 
-    % Pré-processamento no FieldTrip (re-referência e baseline)
+    % Pré-processamento no FieldTrip
     cfg = [];
     cfg.channel = 'all';
     cfg.reref = 'yes';
@@ -50,7 +50,7 @@ function [EEG, dataAvg, source, vol] = eloreta_processamento(EEG)
     cfg.warpmni   = 'yes';
     cfg.nonlinear = 'yes';
     cfg.template  = template_mri;
-    cfg.grid.resolution = 3;  % mm
+    cfg.grid.resolution = 5;  % mm
     cfg.grid.unit = 'mm';
     cfg.elec      = dataPre.elec;      
     cfg.headmodel = vol.vol;           
@@ -62,7 +62,7 @@ function [EEG, dataAvg, source, vol] = eloreta_processamento(EEG)
     cfg.elec      = dataPre.elec;
     cfg.headmodel = vol.vol;
     cfg.grid      = sourcemodel;
-    cfg.normalize = 'no';
+    cfg.normalize = 'yes';
     sourcemodel   = ft_prepare_leadfield(cfg);
 
     % Calcula média e covariância dos dados (ERP)
@@ -76,12 +76,11 @@ function [EEG, dataAvg, source, vol] = eloreta_processamento(EEG)
     % Reconstrução de fonte com eLORETA
     cfg = [];
     cfg.method      = 'eloreta';
-    cfg.tight = 'yes';
     cfg.sourcemodel = sourcemodel;
     cfg.headmodel   = vol.vol;
     source          = ft_sourceanalysis(cfg, dataAvg);
 
-    % Z-score da potência (opcional)
+    % Z-score da potência
     if isfield(source, 'avg') && isfield(source.avg, 'pow')
         pow = source.avg.pow;
         source.avg.pow_z = (pow - mean(pow)) / std(pow);

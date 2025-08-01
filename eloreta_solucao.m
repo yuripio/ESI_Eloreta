@@ -16,11 +16,11 @@ function eloreta_solucao(dataAvg, lat, vol, nome_classe)
     cfg.method        = 'mne';
     cfg.grid          = leadfield;
     cfg.headmodel     = vol.vol;
-    cfg.mne.lambda    = 0.5;
+    cfg.mne.lambda    = 3;
     cfg.mne.scalesourcecov = 'yes';
     source            = ft_sourceanalysis(cfg, dataAvg);
 
-    % OPCIONAL: mostrar valor do pico
+    % Mostra valor do pico
     if isfield(source, 'avg') && isfield(source.avg, 'pow')
         [maxval, maxidx] = max(source.avg.pow);
         fprintf('Potência: min=%.4f, max=%.4f\n', min(source.avg.pow), maxval);
@@ -38,7 +38,10 @@ function eloreta_solucao(dataAvg, lat, vol, nome_classe)
     cfg.latency = lat;
     %cfg.title = ['eLORETA - Classe: ' nome_classe];
     ft_sourceplot(cfg, source);
-    colormap parula;
+    colormap turbo;
+    
+    figure;
+    ft_plot_mesh(sourcemodel, 'vertexcolor', 'b');
+    title('Malha cortical - Posição dos vértices');
+
 end
-
-

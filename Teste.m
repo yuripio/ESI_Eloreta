@@ -1,4 +1,4 @@
-%% CONVERTER DADOS PARA FORMATO EEGLAB
+%% CONVE RTER DADOS PARA FORMATO EEGLAB
 %1 - Direita 2 - Esquerda
 
 %% Caminho base e inicialização
@@ -21,7 +21,6 @@ for i = 1:10
     if isfile(filePath)
         load(filePath, 'segData');
         
-        % ⚠️ Usa a nova função com base no .elc
         eeg_temp = converte_eeglab(['EEG_V' num2str(i)], segData, lista_canais);
         
         if isempty(eeg_test_all)
@@ -36,17 +35,7 @@ end
 
 eeg_test = eeg_test_all;
 
-%% CALCULAR LATÊNCIA PEAK P300
-canais = {'Pz', 'CPz', 'Cz', 'POz'};
-lat = latencia_p300_peak(eeg_test, canais);
-
-%% RECONSTRUÇÃO ELORETA
-[EEG, dataAvg, source, vol] = eloreta_processamento(eeg_test);
-eloreta_solucao(dataAvg, 0.296 , vol);
-
-
-%%
-% Canais para análise visual
+%% CALCULAR LATÊNCIA DE FORMA VISUAL
 canais_erp = {'Cz', 'CPz', 'Pz', 'POz'};
 cores = lines(numel(canais_erp));
 
@@ -64,6 +53,10 @@ ylabel('Amplitude (µV)');
 title('ERP - canais centrais');
 legend show;
 grid on;
+
+%% RECONSTRUÇÃO ELORETA
+[EEG, dataAvg, source, vol] = eloreta_processamento(eeg_test);
+eloreta_solucao(dataAvg, 0.296 , vol);
 
 %% Visualizar os eletrodos em 2D (Topoplot)
 %figure;
